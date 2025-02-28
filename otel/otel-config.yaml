@@ -1,0 +1,53 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+        # kafka:
+        #   brokers: [ "kafka:9092" ]
+        #   topics: [ "otel-traces", "otel-metrics", "otel-logs" ]
+        #   group_id: "otel-collector"
+        #   metadata:
+        #     retry:
+        #       max: 3
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 10000
+    send_batch_max_size: 11000
+
+exporters:
+  debug:
+    verbosity: detailed
+
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+
+  otlp/jaeger:
+    endpoint: "http://jaeger:4317"
+    tls:
+      insecure: true
+  # kafka:
+  #   brokers: [ "kafka:29092" ]
+  #   topic: "otel-processed-data"
+  #   encoding: json
+  
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ debug, otlp/jaeger ]
+
+    metrics:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ debug, otlp/jaeger, prometheus ]
+
+    logs:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ debug, otlp/jaeger ]
